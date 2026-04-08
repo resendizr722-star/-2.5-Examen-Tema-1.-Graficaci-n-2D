@@ -4,7 +4,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = 400;
 canvas.height = 600;
 
-// 🧍 Sprites
+// Sprites
 const playerRight = new Image();
 playerRight.src = "assets/img/robot-p-derecho.png";
 
@@ -14,11 +14,11 @@ playerLeft.src = "assets/img/robot-p-izquierdo.png";
 const playerUp = new Image();
 playerUp.src = "assets/img/robot-p-apuntando.png";
 
-// 🔊 Sonidos
+// Sonidos
 const jumpSound = new Audio("assets/jump.wav");
 const shootSound = new Audio("assets/shoot.wav");
 
-// 🎮 Jugador
+// Jugador
 const player = {
   x: 170,
   y: 400,
@@ -32,79 +32,103 @@ const player = {
 let direction = "right";
 let currentPlayerImg = playerRight;
 
-// 🟩 Plataformas
+// Plataformas
 let platforms = [];
-
-// 🔫 Balas
 let bullets = [];
 
-// 👾 Enemigos
-let enemies = [];
+// 👑 JEFE
+let boss = null;
 
-// 📊 Score
+// Score
 let score = 0;
 
-// Crear plataformas
+// 🔥 NUEVO CONTROL
+let lastBossScore = 0;
+
+// POSICIONES
+const POSITIONS = {
+  LEFT: 40,
+  CENTER: canvas.width / 2 - 30,
+  RIGHT: canvas.width - 100
+};
+
+const pattern = ["LEFT", "CENTER", "RIGHT"];
+let patternIndex = 0;
+
+const PLATFORM_GAP = 55;
+
+// UTIL
+function getHighestPlatform() {
+  return platforms.reduce((highest, p) => {
+    return p.y < highest.y ? p : highest;
+  }, platforms[0]);
+}
+
+// CREAR PLATAFORMAS
 function createPlatforms() {
   platforms = [];
 
-  platforms.push({
-    x: player.x - 20,
+  let base = {
+    x: POSITIONS.CENTER,
     y: player.y + 80,
-    width: 90,
-    height: 10,
-    broken: false
-  });
+    width: 80,
+    height: 10
+  };
 
-  for (let i = 1; i < 7; i++) {
+  platforms.push(base);
+
+  let y = base.y - PLATFORM_GAP;
+
+  for (let i = 0; i < 10; i++) {
+    let posKey = pattern[patternIndex % pattern.length];
+    patternIndex++;
+
     platforms.push({
-      x: Math.random() * (canvas.width - 60),
-      y: i * 90,
+      x: POSITIONS[posKey],
+      y: y,
       width: 60,
-      height: 10,
-      broken: Math.random() < 0.3
+      height: 10
     });
+
+    y -= PLATFORM_GAP;
   }
 }
 
 createPlatforms();
 
-// Crear enemigo
-function spawnEnemy() {
-  enemies.push({
-    x: Math.random() * (canvas.width - 40),
-    y: -50,
-    width: 40,
-    height: 40,
-    speed: 1 + Math.random()
-  });
+// SPAWN JEFE
+function spawnBoss() {
+  boss = {
+    x: 100,
+    y: 50,
+    width: 120,
+    height: 80,
+    hp: 20,
+    maxHp: 20,
+    speed: 2,
+    direction: 1,
+    state: "alive",
+    deathTimer: 0
+  };
 }
 
-// 🎮 Controles
+// CONTROLES
 let keys = {};
 
 document.addEventListener("keydown", e => {
   keys[e.key] = true;
 
-  if (e.key === "ArrowRight") {
-    direction = "right";
-  }
+  if (e.key === "ArrowRight") direction = "right";
+  if (e.key === "ArrowLeft") direction = "left";
 
-  if (e.key === "ArrowLeft") {
-    direction = "left";
-  }
-
-  // 🔫 Disparo
-  if (e.key === "ArrowUp") {
-    shoot();
-  }
+  if (e.key === "ArrowUp") shoot();
 });
 
 document.addEventListener("keyup", e => {
   keys[e.key] = false;
 });
 
-// 🔫 Disparar
+// DISPARO
 function shoot() {
   bullets.push({
     x: player.x + player.width / 2 - 5,
@@ -118,145 +142,175 @@ function shoot() {
   shootSound.play();
 }
 
-// 🔄 Update
+// UPDATE
 function update() {
-  // Movimiento
   if (keys["ArrowLeft"]) player.x -= 5;
   if (keys["ArrowRight"]) player.x += 5;
 
-  // Teletransporte
   if (player.x > canvas.width) player.x = -player.width;
   if (player.x < -player.width) player.x = canvas.width;
 
-  // Sprite
-  if (keys["ArrowUp"]) {
-    currentPlayerImg = playerUp;
-  } else {
-    currentPlayerImg = direction === "right" ? playerRight : playerLeft;
-  }
+  currentPlayerImg = keys["ArrowUp"]
+    ? playerUp
+    : (direction === "right" ? playerRight : playerLeft);
 
-  // Gravedad
+  let prevY = player.y;
+
   player.velocityY += player.gravity;
   player.y += player.velocityY;
 
-  // Colisiones con plataformas
-  platforms.forEach((platform, index) => {
+  // COLISIÓN
+  platforms.forEach((p) => {
     if (player.velocityY > 0) {
-      if (
-        player.x + player.width > platform.x &&
-        player.x < platform.x + platform.width &&
-        player.y + player.height >= platform.y &&
-        player.y + player.height <= platform.y + 15
-      ) {
-        jumpSound.currentTime = 0;
-        jumpSound.play();
+      let prevBottom = prevY + player.height;
+      let currentBottom = player.y + player.height;
 
+      if (
+        prevBottom <= p.y &&
+        currentBottom >= p.y &&
+        player.x + player.width > p.x &&
+        player.x < p.x + p.width
+      ) {
+        player.y = p.y - player.height;
         player.velocityY = player.jumpPower;
 
-        if (platform.broken) {
-          platforms.splice(index, 1);
-        }
+        jumpSound.currentTime = 0;
+        jumpSound.play();
       }
     }
   });
 
-  // Scroll
+  // SCROLL
   if (player.y < 250) {
     let diff = 250 - player.y;
     player.y = 250;
-    score += Math.floor(diff);
 
     platforms.forEach(p => {
       p.y += diff;
 
       if (p.y > canvas.height) {
-        p.y = 0;
-        p.x = Math.random() * (canvas.width - 60);
-        p.broken = Math.random() < 0.3;
+        let top = getHighestPlatform();
+
+        let posKey = pattern[patternIndex % pattern.length];
+        patternIndex++;
+
+        p.x = POSITIONS[posKey];
+        p.y = top.y - PLATFORM_GAP;
+
+        score += 100;
+
+        // 🔥 NUEVO SISTEMA DE JEFE
+        if ((score - lastBossScore) >= 1500 && boss === null) {
+          spawnBoss();
+        }
       }
     });
-
-    enemies.forEach(e => e.y += diff);
   }
 
-  // 🔫 Balas
+  // BALAS
   bullets.forEach((b, i) => {
     b.y -= b.speed;
-
     if (b.y < 0) bullets.splice(i, 1);
   });
 
-  // 👾 Enemigos
-  if (Math.random() < 0.02) spawnEnemy();
+  // 👑 JEFE
+  if (boss) {
+    if (boss.state === "alive") {
 
-  enemies.forEach((e, ei) => {
-    e.y += e.speed;
+      boss.x += boss.speed * boss.direction;
 
-    // Colisión bala-enemigo
-    bullets.forEach((b, bi) => {
-      if (
-        b.x < e.x + e.width &&
-        b.x + b.width > e.x &&
-        b.y < e.y + e.height &&
-        b.y + b.height > e.y
-      ) {
-        enemies.splice(ei, 1);
-        bullets.splice(bi, 1);
-        score += 100;
+      if (boss.x <= 0 || boss.x + boss.width >= canvas.width) {
+        boss.direction *= -1;
       }
-    });
 
-    // Game over
-    if (
-      player.x < e.x + e.width &&
-      player.x + player.width > e.x &&
-      player.y < e.y + e.height &&
-      player.y + player.height > e.y
-    ) {
-      alert("💀 Game Over\nPuntaje: " + score);
-      document.location.reload();
+      bullets.forEach((b, bi) => {
+        if (
+          b.x < boss.x + boss.width &&
+          b.x + b.width > boss.x &&
+          b.y < boss.y + boss.height &&
+          b.y + b.height > boss.y
+        ) {
+          boss.hp--;
+          bullets.splice(bi, 1);
+        }
+      });
+
+      if (boss.hp <= 0) {
+        boss.state = "dying";
+        boss.deathTimer = 60;
+
+        // 🔥 REINICIAR CONTADOR AQUÍ
+        lastBossScore = score;
+      }
+
+      if (
+        player.x < boss.x + boss.width &&
+        player.x + player.width > boss.x &&
+        player.y < boss.y + boss.height &&
+        player.y + player.height > boss.y
+      ) {
+        gameOver();
+      }
     }
-  });
 
-  // Caída
-  if (player.y > canvas.height) {
-    alert("💀 Game Over\nPuntaje: " + score);
-    document.location.reload();
+    else {
+      boss.deathTimer--;
+
+      if (boss.deathTimer <= 0) {
+        boss = null;
+      }
+    }
   }
+
+  if (player.y > canvas.height) gameOver();
 }
 
-// 🎨 Draw
+// DRAW
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Jugador
   ctx.drawImage(currentPlayerImg, player.x, player.y, player.width, player.height);
 
-  // Plataformas
-  platforms.forEach(p => {
-    ctx.fillStyle = p.broken ? "red" : "black";
-    ctx.fillRect(p.x, p.y, p.width, p.height);
-  });
+  ctx.fillStyle = "black";
+  platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
 
-  // Balas
   ctx.fillStyle = "yellow";
-  bullets.forEach(b => {
-    ctx.fillRect(b.x, b.y, b.width, b.height);
-  });
+  bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-  // Enemigos
-  ctx.fillStyle = "purple";
-  enemies.forEach(e => {
-    ctx.fillRect(e.x, e.y, e.width, e.height);
-  });
+  if (boss) {
+    if (boss.state === "alive") {
+      ctx.fillStyle = "darkred";
+      ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
 
-  // Score
+      ctx.fillStyle = "red";
+      ctx.fillRect(50, 20, 300, 10);
+
+      ctx.fillStyle = "green";
+      ctx.fillRect(50, 20, 300 * (boss.hp / boss.maxHp), 10);
+    } else {
+      ctx.fillStyle = "orange";
+      ctx.beginPath();
+      ctx.arc(
+        boss.x + boss.width / 2,
+        boss.y + boss.height / 2,
+        60 - boss.deathTimer,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+  }
+
   ctx.fillStyle = "black";
   ctx.font = "20px Arial";
-  ctx.fillText("Score: " + score, 10, 30);
+  ctx.fillText("Score: " + score, 10, 50);
 }
 
-// Loop
+function gameOver() {
+  alert("💀 Game Over\nScore: " + score);
+  location.reload();
+}
+
 function loop() {
   update();
   draw();
