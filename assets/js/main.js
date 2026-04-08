@@ -14,16 +14,11 @@ playerLeft.src = "assets/img/robot-p-izquierdo.png";
 const playerUp = new Image();
 playerUp.src = "assets/img/robot-p-apuntando.png";
 
-// 👉 Dirección actual (clave)
-let direction = "right"; // right | left
-
-// Imagen actual
-let currentPlayerImg = playerRight;
-
-// 🔊 Sonido
+// 🔊 Sonidos
 const jumpSound = new Audio("assets/jump.wav");
+const shootSound = new Audio("assets/shoot.wav");
 
-// 🎮 Jugador (MÁS GRANDE 🔍)
+// 🎮 Jugador
 const player = {
   x: 170,
   y: 400,
@@ -34,13 +29,25 @@ const player = {
   jumpPower: -12
 };
 
+let direction = "right";
+let currentPlayerImg = playerRight;
+
 // 🟩 Plataformas
 let platforms = [];
 
+// 🔫 Balas
+let bullets = [];
+
+// 👾 Enemigos
+let enemies = [];
+
+// 📊 Score
+let score = 0;
+
+// Crear plataformas
 function createPlatforms() {
   platforms = [];
 
-  // 🛡 Plataforma segura
   platforms.push({
     x: player.x - 20,
     y: player.y + 80,
@@ -62,6 +69,17 @@ function createPlatforms() {
 
 createPlatforms();
 
+// Crear enemigo
+function spawnEnemy() {
+  enemies.push({
+    x: Math.random() * (canvas.width - 40),
+    y: -50,
+    width: 40,
+    height: 40,
+    speed: 1 + Math.random()
+  });
+}
+
 // 🎮 Controles
 let keys = {};
 
@@ -70,18 +88,35 @@ document.addEventListener("keydown", e => {
 
   if (e.key === "ArrowRight") {
     direction = "right";
-    currentPlayerImg = playerRight;
   }
 
   if (e.key === "ArrowLeft") {
     direction = "left";
-    currentPlayerImg = playerLeft;
+  }
+
+  // 🔫 Disparo
+  if (e.key === "ArrowUp") {
+    shoot();
   }
 });
 
 document.addEventListener("keyup", e => {
   keys[e.key] = false;
 });
+
+// 🔫 Disparar
+function shoot() {
+  bullets.push({
+    x: player.x + player.width / 2 - 5,
+    y: player.y,
+    width: 10,
+    height: 20,
+    speed: 7
+  });
+
+  shootSound.currentTime = 0;
+  shootSound.play();
+}
 
 // 🔄 Update
 function update() {
@@ -93,11 +128,10 @@ function update() {
   if (player.x > canvas.width) player.x = -player.width;
   if (player.x < -player.width) player.x = canvas.width;
 
-  // 🔼 PRIORIDAD: si mantiene ↑
+  // Sprite
   if (keys["ArrowUp"]) {
     currentPlayerImg = playerUp;
   } else {
-    // 🔁 vuelve a última dirección
     currentPlayerImg = direction === "right" ? playerRight : playerLeft;
   }
 
@@ -105,7 +139,7 @@ function update() {
   player.velocityY += player.gravity;
   player.y += player.velocityY;
 
-  // Colisiones
+  // Colisiones con plataformas
   platforms.forEach((platform, index) => {
     if (player.velocityY > 0) {
       if (
@@ -130,6 +164,7 @@ function update() {
   if (player.y < 250) {
     let diff = 250 - player.y;
     player.y = 250;
+    score += Math.floor(diff);
 
     platforms.forEach(p => {
       p.y += diff;
@@ -140,15 +175,53 @@ function update() {
         p.broken = Math.random() < 0.3;
       }
     });
+
+    enemies.forEach(e => e.y += diff);
   }
 
-  // Reset
+  // 🔫 Balas
+  bullets.forEach((b, i) => {
+    b.y -= b.speed;
+
+    if (b.y < 0) bullets.splice(i, 1);
+  });
+
+  // 👾 Enemigos
+  if (Math.random() < 0.02) spawnEnemy();
+
+  enemies.forEach((e, ei) => {
+    e.y += e.speed;
+
+    // Colisión bala-enemigo
+    bullets.forEach((b, bi) => {
+      if (
+        b.x < e.x + e.width &&
+        b.x + b.width > e.x &&
+        b.y < e.y + e.height &&
+        b.y + b.height > e.y
+      ) {
+        enemies.splice(ei, 1);
+        bullets.splice(bi, 1);
+        score += 100;
+      }
+    });
+
+    // Game over
+    if (
+      player.x < e.x + e.width &&
+      player.x + player.width > e.x &&
+      player.y < e.y + e.height &&
+      player.y + player.height > e.y
+    ) {
+      alert("💀 Game Over\nPuntaje: " + score);
+      document.location.reload();
+    }
+  });
+
+  // Caída
   if (player.y > canvas.height) {
-    player.y = 400;
-    player.velocityY = 0;
-    direction = "right";
-    currentPlayerImg = playerRight;
-    createPlatforms();
+    alert("💀 Game Over\nPuntaje: " + score);
+    document.location.reload();
   }
 }
 
@@ -156,15 +229,34 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Jugador
   ctx.drawImage(currentPlayerImg, player.x, player.y, player.width, player.height);
 
+  // Plataformas
   platforms.forEach(p => {
     ctx.fillStyle = p.broken ? "red" : "black";
     ctx.fillRect(p.x, p.y, p.width, p.height);
   });
+
+  // Balas
+  ctx.fillStyle = "yellow";
+  bullets.forEach(b => {
+    ctx.fillRect(b.x, b.y, b.width, b.height);
+  });
+
+  // Enemigos
+  ctx.fillStyle = "purple";
+  enemies.forEach(e => {
+    ctx.fillRect(e.x, e.y, e.width, e.height);
+  });
+
+  // Score
+  ctx.fillStyle = "black";
+  ctx.font = "20px Arial";
+  ctx.fillText("Score: " + score, 10, 30);
 }
 
-// 🔁 Loop
+// Loop
 function loop() {
   update();
   draw();
