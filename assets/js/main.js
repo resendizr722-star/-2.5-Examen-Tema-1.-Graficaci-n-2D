@@ -4,19 +4,31 @@ const ctx = canvas.getContext("2d");
 canvas.width = 400;
 canvas.height = 600;
 
-// 🧍 Imagen del jugador
-const playerImg = new Image();
-playerImg.src = "assets/player.png";
+// 🧍 Sprites
+const playerRight = new Image();
+playerRight.src = "assets/img/robot-p-derecho.png";
 
-// 🔊 Sonido salto
+const playerLeft = new Image();
+playerLeft.src = "assets/img/robot-p-izquierdo.png";
+
+const playerUp = new Image();
+playerUp.src = "assets/img/robot-p-apuntando.png";
+
+// 👉 Dirección actual (clave)
+let direction = "right"; // right | left
+
+// Imagen actual
+let currentPlayerImg = playerRight;
+
+// 🔊 Sonido
 const jumpSound = new Audio("assets/jump.wav");
 
-// 🎮 Jugador
+// 🎮 Jugador (MÁS GRANDE 🔍)
 const player = {
-  x: 180,
+  x: 170,
   y: 400,
-  width: 40,
-  height: 40,
+  width: 70,
+  height: 70,
   velocityY: 0,
   gravity: 0.5,
   jumpPower: -12
@@ -25,27 +37,25 @@ const player = {
 // 🟩 Plataformas
 let platforms = [];
 
-// Crear plataformas (con inicio seguro)
 function createPlatforms() {
   platforms = [];
 
-  // 🛡 Plataforma inicial SEGURA
+  // 🛡 Plataforma segura
   platforms.push({
-    x: player.x - 10,
-    y: player.y + 50,
-    width: 80,
+    x: player.x - 20,
+    y: player.y + 80,
+    width: 90,
     height: 10,
     broken: false
   });
 
-  // Resto de plataformas
   for (let i = 1; i < 7; i++) {
     platforms.push({
       x: Math.random() * (canvas.width - 60),
       y: i * 90,
       width: 60,
       height: 10,
-      broken: Math.random() < 0.3 // 30% se rompen
+      broken: Math.random() < 0.3
     });
   }
 }
@@ -55,24 +65,47 @@ createPlatforms();
 // 🎮 Controles
 let keys = {};
 
-document.addEventListener("keydown", e => keys[e.key] = true);
-document.addEventListener("keyup", e => keys[e.key] = false);
+document.addEventListener("keydown", e => {
+  keys[e.key] = true;
+
+  if (e.key === "ArrowRight") {
+    direction = "right";
+    currentPlayerImg = playerRight;
+  }
+
+  if (e.key === "ArrowLeft") {
+    direction = "left";
+    currentPlayerImg = playerLeft;
+  }
+});
+
+document.addEventListener("keyup", e => {
+  keys[e.key] = false;
+});
 
 // 🔄 Update
 function update() {
-  // Movimiento lateral
+  // Movimiento
   if (keys["ArrowLeft"]) player.x -= 5;
   if (keys["ArrowRight"]) player.x += 5;
 
-  // Teletransporte lateral
+  // Teletransporte
   if (player.x > canvas.width) player.x = -player.width;
   if (player.x < -player.width) player.x = canvas.width;
+
+  // 🔼 PRIORIDAD: si mantiene ↑
+  if (keys["ArrowUp"]) {
+    currentPlayerImg = playerUp;
+  } else {
+    // 🔁 vuelve a última dirección
+    currentPlayerImg = direction === "right" ? playerRight : playerLeft;
+  }
 
   // Gravedad
   player.velocityY += player.gravity;
   player.y += player.velocityY;
 
-  // 🧠 Colisiones
+  // Colisiones
   platforms.forEach((platform, index) => {
     if (player.velocityY > 0) {
       if (
@@ -81,13 +114,11 @@ function update() {
         player.y + player.height >= platform.y &&
         player.y + player.height <= platform.y + 15
       ) {
-        // 🔊 sonido
         jumpSound.currentTime = 0;
         jumpSound.play();
 
         player.velocityY = player.jumpPower;
 
-        // 💥 romper plataforma
         if (platform.broken) {
           platforms.splice(index, 1);
         }
@@ -95,7 +126,7 @@ function update() {
     }
   });
 
-  // 📈 Scroll
+  // Scroll
   if (player.y < 250) {
     let diff = 250 - player.y;
     player.y = 250;
@@ -111,10 +142,12 @@ function update() {
     });
   }
 
-  // ❌ Caída
+  // Reset
   if (player.y > canvas.height) {
     player.y = 400;
     player.velocityY = 0;
+    direction = "right";
+    currentPlayerImg = playerRight;
     createPlatforms();
   }
 }
@@ -123,10 +156,8 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Jugador (imagen)
-  ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+  ctx.drawImage(currentPlayerImg, player.x, player.y, player.width, player.height);
 
-  // Plataformas
   platforms.forEach(p => {
     ctx.fillStyle = p.broken ? "red" : "black";
     ctx.fillRect(p.x, p.y, p.width, p.height);
