@@ -4,7 +4,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = 400;
 canvas.height = 600;
 
-// IMÁGENES
+// IMÁGENES JUGADOR
 const playerRight = new Image();
 playerRight.src = "assets/img/robot-p-derecho.png";
 
@@ -13,6 +13,16 @@ playerLeft.src = "assets/img/robot-p-izquierdo.png";
 
 const playerUp = new Image();
 playerUp.src = "assets/img/robot-p-apuntando.png";
+
+// 🔥 IMÁGENES JEFE (PRIMER JEFE)
+const bossImg1 = new Image();
+bossImg1.src = "assets/img/j-1.png";
+
+const bossImg2 = new Image();
+bossImg2.src = "assets/img/j-2.png";
+
+const bossImg3 = new Image();
+bossImg3.src = "assets/img/j-3.png";
 
 // SONIDOS
 const jumpSound = new Audio("assets/jump.wav");
@@ -39,6 +49,9 @@ let boss = null;
 
 let score = 0;
 let lastBossScore = 0;
+
+// 🔥 CONTROL PRIMER JEFE
+let firstBoss = true;
 
 const PLATFORM_GAP = 65;
 
@@ -113,15 +126,18 @@ function spawnBoss() {
   boss = {
     x: 100,
     y: 50,
-    width: 120,
-    height: 80,
+    width: 180,
+    height: 120,
     hp: 20,
     maxHp: 20,
     speed: 2,
     direction: 1,
     state: "alive",
-    deathTimer: 0
+    deathTimer: 0,
+    isFirst: firstBoss // 👈 clave
   };
+
+  firstBoss = false;
 }
 
 // CONTROLES
@@ -188,8 +204,7 @@ function update() {
         player.y = p.y - player.height;
         player.velocityY = player.jumpPower;
 
-        jumpSound.currentTime = 0;
-        jumpSound.play();
+        if (jumpSound.paused) jumpSound.play();
       }
     }
   });
@@ -222,9 +237,9 @@ function update() {
   }
 
   // BALAS
-  bullets.forEach((b, i) => {
+  bullets = bullets.filter(b => {
     b.y -= b.speed;
-    if (b.y < 0) bullets.splice(i, 1);
+    return b.y > 0;
   });
 
   // JEFE
@@ -237,7 +252,10 @@ function update() {
         boss.direction *= -1;
       }
 
-      bullets.forEach((b, bi) => {
+      // COLISIÓN BALAS
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        let b = bullets[i];
+
         if (
           b.x < boss.x + boss.width &&
           b.x + b.width > boss.x &&
@@ -245,9 +263,9 @@ function update() {
           b.y + b.height > boss.y
         ) {
           boss.hp--;
-          bullets.splice(bi, 1);
+          bullets.splice(i, 1);
         }
-      });
+      }
 
       if (boss.hp <= 0) {
         boss.state = "dying";
@@ -272,7 +290,7 @@ function update() {
   if (player.y > canvas.height) gameOver();
 }
 
-// 🎨 DIBUJAR SLIME
+// SLIME
 function drawSlime(p) {
   ctx.fillStyle = "#00ff88";
 
@@ -294,22 +312,18 @@ function draw() {
 
   platforms.forEach(p => {
 
-    // base metálica
     ctx.fillStyle = "#7f8c8d";
     ctx.fillRect(p.x, p.y, p.width, p.height);
 
-    // brillo
     ctx.fillStyle = "#bdc3c7";
     ctx.fillRect(p.x, p.y, p.width, 3);
 
-    // sombra
     ctx.fillStyle = "#2c3e50";
     ctx.fillRect(p.x, p.y + p.height - 3, p.width, 3);
 
-    // slime opcional
     if (p.slime) {
       ctx.fillStyle = "#00ff88";
-      ctx.fillRect(p.x, p.y - 3, p.width, 3); // capa arriba
+      ctx.fillRect(p.x, p.y - 3, p.width, 3);
       drawSlime(p);
     }
   });
@@ -318,11 +332,28 @@ function draw() {
   ctx.fillStyle = "yellow";
   bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
-  // JEFE
+  // 👾 JEFE CON IMÁGENES
   if (boss) {
-    ctx.fillStyle = "darkred";
-    ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
 
+    if (boss.isFirst) {
+      let imgToDraw;
+
+      if (boss.hp === boss.maxHp) {
+        imgToDraw = bossImg1;
+      } else if (boss.hp > boss.maxHp / 2) {
+        imgToDraw = bossImg2;
+      } else {
+        imgToDraw = bossImg3;
+      }
+
+      ctx.drawImage(imgToDraw, boss.x, boss.y, boss.width, boss.height);
+
+    } else {
+      ctx.fillStyle = "darkred";
+      ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+    }
+
+    // VIDA
     ctx.fillStyle = "red";
     ctx.fillRect(50, 20, 300, 10);
 
