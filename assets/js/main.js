@@ -58,6 +58,16 @@ boss2Img2.src = "assets/img/k-2.png";
 const boss2Img3 = new Image();
 boss2Img3.src = "assets/img/k-3.png";
 
+// JEFE 3
+const boss3Img1 = new Image();
+boss3Img1.src = "assets/img/L-1.png";
+
+const boss3Img2 = new Image();
+boss3Img2.src = "assets/img/L-2.png";
+
+const boss3Img3 = new Image();
+boss3Img3.src = "assets/img/L-3.png";
+
 // SONIDOS
 const jumpSound = new Audio("assets/jump.wav");
 const shootSound = new Audio("assets/shoot.wav");
@@ -131,6 +141,8 @@ let meteorTimer = 0;
 let score = 0;
 let lastBossScore = 0;
 let firstBoss = true;
+let bossLevel = 0;
+let bossCycle = 0;
 
 const PLATFORM_GAP = 65;
 const SLIME_CHANCE = 0.35;
@@ -145,8 +157,13 @@ const zoneKeys = ["LEFT", "CENTER", "RIGHT"];
 
 // PLATAFORMAS
 function getNextZone(prevZone) {
-  let possible = zoneKeys.filter(z => z !== prevZone);
-  return possible[Math.floor(Math.random() * possible.length)];
+
+  // evita repetir extremos
+  if (prevZone === "LEFT") return Math.random() < 0.7 ? "CENTER" : "RIGHT";
+  if (prevZone === "RIGHT") return Math.random() < 0.7 ? "CENTER" : "LEFT";
+
+  // desde el centro puede ir a cualquiera
+  return Math.random() < 0.5 ? "LEFT" : "RIGHT";
 }
 
 function getHighestPlatform() {
@@ -162,7 +179,11 @@ function createPlatforms() {
     width: 100,
     height: 15,
     zone: "CENTER",
-    slime: false
+    slime: false,
+
+    falling: false,
+    fallSpeed: 0,
+    passed: false
   });
 
   let y = player.y + 80 - PLATFORM_GAP;
@@ -193,22 +214,32 @@ createPlatforms();
 
 // JEFE
 function spawnBoss() {
+
+  let baseHP = 30;
+  let baseSpeed = 2;
+  let baseCooldown = 60;
+
   boss = {
     x: canvas.width / 2 - 90,
     y: 50,
     width: 180,
     height: 120,
-    hp: 30, // 🔥 MÁS VIDA
-    maxHp: 30,
-    speed: 2,
+
+    // 🔥 ESCALADO
+    hp: baseHP + bossCycle * 10,
+    maxHp: baseHP + bossCycle * 10,
+
+    speed: baseSpeed + bossCycle * 0.3,
+
     direction: 1,
     state: "alive",
     deathTimer: 0,
-    isFirst: firstBoss,
-    shootCooldown: 0
+
+    shootCooldown: baseCooldown - bossCycle * 2
   };
 
-  firstBoss = false;
+  // 🚫 límite para que no dispare absurdo
+  if (boss.shootCooldown < 20) boss.shootCooldown = 20;
 }
 function spawnMeteor() {
 
@@ -253,6 +284,8 @@ function bossShoot() {
     vx: Math.cos(angle) * 3,
     vy: Math.sin(angle) * 3
   });
+
+  
 }
 
 // CONTROLES
@@ -365,11 +398,14 @@ function update() {
     }
   });
 
-   // SCROLL
- if (player.y < 250) {
+// SCROLL
+if (player.y < 250) {
   let diff = 250 - player.y;
   player.y = 250;
 
+  // =========================
+  // 🧱 PLATAFORMAS
+  // =========================
   platforms.forEach(p => {
     p.y += diff;
 
@@ -381,6 +417,11 @@ function update() {
       p.x = ZONES[newZone];
       p.y = top.y - PLATFORM_GAP;
       p.slime = Math.random() < SLIME_CHANCE;
+      
+      // 🔄 reset
+      p.passed = false;
+      p.falling = false;
+      p.fallSpeed = 0;
 
       // 🔄 reset estado
       p.breakable = false;
@@ -390,14 +431,14 @@ function update() {
       // 🎲 distribución de tipos
       if (!firstBoss) {
 
+        let isSafe = !(top.breakable || top.slime);
         let r = Math.random();
 
-        if (r < 0.2) {
-          // 💥 20% rompibles
+        if (r < 0.15 && isSafe) {
           p.breakable = true;
 
-        } else if (r < 0.3) {
-          // 🛟 10% rescate (plataforma extra arriba)
+        } else if (r < 0.25) {
+
           let rescueZone = getNextZone(p.zone);
 
           platforms.push({
@@ -407,31 +448,56 @@ function update() {
             height: 15,
             zone: rescueZone,
             slime: false,
-
             breakable: false,
             breaking: false,
-            breakTimer: 0
+            breakTimer: 0,
+            passed: false,
+            falling: false,
+            fallSpeed: 0
           });
         }
-
-        // restante 70% = normales
       }
 
       score += 100;
 
-      if (boss === null) {
+     if (boss === null) {
+      let nextBossScore = 2500 + (bossCycle * 7500);
 
-  // 👾 PRIMER JEFE
-  if (score >= 2500 && firstBoss) {
-    spawnBoss();
-  }
+      if (score >= nextBossScore) {
 
-  // 😈 SEGUNDO JEFE
-  else if (score >= 5000 && !firstBoss) {
-    spawnBoss();
+        // 🔁 rotar bosses: 1 → 2 → 3 → 1 → 2 → 3...
+        bossLevel++;
+        if (bossLevel > 3) bossLevel = 1;
+
+        spawnBoss();
+
+       bossCycle++; // 🔥 siguiente ronda
+
   }
+    
 }
     }
+  });
+
+  // =========================
+  // ☄️ METEORITOS (FIX)
+  // =========================
+  meteors.forEach(m => {
+    m.y += diff;
+  });
+
+  // =========================
+  // 💥 BALAS JEFE (recomendado)
+  // =========================
+  bossBullets.forEach(b => {
+    b.y += diff;
+  });
+
+  // =========================
+  // 🔫 BALAS PLAYER (opcional)
+  // =========================
+  bullets.forEach(b => {
+    b.y += diff;
   });
 }
 
@@ -552,6 +618,84 @@ if (distance < playerRadius + meteorRadius) {
 
   return m.y < canvas.height + 50;
 });
+
+platforms = platforms.filter(p => {
+
+  // solo eliminar si ya salió completamente de pantalla
+  if (p.y > canvas.height + 100) {
+    return false;
+  }
+
+  return true;
+});
+
+// ==========================
+// 🧠 1. MARCAR PASSED PRIMERO
+// ==========================
+platforms.forEach(p => {
+
+  // marcar como pasada SOLO cuando el jugador ya está arriba de ella
+  if (
+    !p.passed &&
+    player.velocityY < 0 && // sigue subiendo
+    player.y + player.height < p.y - 10 // ya quedó claramente arriba
+  ) {
+    p.passed = true;
+  }
+
+});
+
+// ==========================
+// 💥 2. ACTIVAR CAÍDA
+// ==========================
+platforms.forEach(p => {
+
+  if (p.passed && !p.falling && p.y > player.y + 250) {
+    p.falling = true;
+    p.fallSpeed = 2;
+  }
+
+});
+
+// ==========================
+// ⬇️ 3. MOVER CAÍDA
+// ==========================
+platforms.forEach(p => {
+
+  if (p.falling) {
+    p.y += p.fallSpeed;
+    p.fallSpeed += 0.2;
+  }
+
+});
+
+// ==========================
+// 🧠 GENERADOR DE SEGURIDAD
+// ==========================
+while (platforms.length < 12) {
+
+  let top = getHighestPlatform();
+  let newZone = getNextZone(top.zone);
+
+  platforms.push({
+    x: ZONES[newZone],
+    y: top.y - PLATFORM_GAP,
+    width: 100,
+    height: 15,
+    zone: newZone,
+    slime: Math.random() < SLIME_CHANCE,
+
+    breakable: false,
+    breaking: false,
+    breakTimer: 0,
+
+    // IMPORTANTE
+    passed: false,
+    falling: false,
+    fallSpeed: 0
+  });
+
+}
 }
 
 // SLIME
@@ -624,30 +768,22 @@ function drawBackground() {
 
 // DRAW
 function draw() {
-  drawBackground();
+  drawBackground();platforms.forEach(p => {
 
-  ctx.drawImage(
-    currentPlayerImg,
-    player.x + player.width / 2 - PLAYER_SIZE / 2,
-    player.y + player.height / 2 - PLAYER_SIZE / 2,
-    PLAYER_SIZE,
-    PLAYER_SIZE
-  );
-
-  platforms.forEach(p => {
+  // 👻 EFECTO CUANDO CAE
+  if (p.falling) {
+    ctx.globalAlpha = 0.5; // transparencia
+  }
 
   // 💥 PLATAFORMA ROMPIBLE
   if (p.breakable) {
 
-    // base
     ctx.fillStyle = "#8e44ad";
     ctx.fillRect(p.x, p.y, p.width, p.height);
 
-    // borde superior
     ctx.fillStyle = "#c39bd3";
     ctx.fillRect(p.x, p.y, p.width, 3);
 
-    // grietas decorativas
     ctx.strokeStyle = "#f5eef8";
     ctx.lineWidth = 2;
 
@@ -657,20 +793,8 @@ function draw() {
     ctx.lineTo(p.x + 70, p.y + 6);
     ctx.stroke();
 
-    ctx.beginPath();
-    ctx.moveTo(p.x + 20, p.y + 3);
-    ctx.lineTo(p.x + 50, p.y + 10);
-    ctx.stroke();
-
-    // 💥 animación cuando se rompe
-    if (p.breaking) {
-      ctx.fillStyle = "rgba(255,255,255,0.25)";
-      ctx.fillRect(p.x, p.y, p.width, p.height);
-    }
-
   } else {
 
-    // 🧱 NORMAL (tu estilo original)
     ctx.fillStyle = "#7f8c8d";
     ctx.fillRect(p.x, p.y, p.width, p.height);
 
@@ -686,7 +810,21 @@ function draw() {
       drawSlime(p);
     }
   }
- });
+
+  // 🔄 RESET (MUY IMPORTANTE)
+  ctx.globalAlpha = 1;
+
+});
+
+  ctx.drawImage(
+    currentPlayerImg,
+    player.x + player.width / 2 - PLAYER_SIZE / 2,
+    player.y + player.height / 2 - PLAYER_SIZE / 2,
+    PLAYER_SIZE,
+    PLAYER_SIZE
+  );
+
+
 
   // 💥 DISPAROS PLAYER (ENERGÍA)
   bullets.forEach(b => {
@@ -722,50 +860,63 @@ function draw() {
   ctx.shadowBlur = 0;
   });
 
-  // JEFE DRAW
-  if (boss) {
+// JEFE DRAW
+if (boss) {
   let img;
 
-  if (boss.isFirst) {
-    // 👾 JEFE 1 (igual que ya lo tienes)
-    if (boss.hp === boss.maxHp) img = bossImg1;
-    else if (boss.hp > boss.maxHp / 2) img = bossImg2;
-    else img = bossImg3;
-
-  } else {
-    // 😈 JEFE 2 (nuevo con tus imágenes k-1, k-2, k-3)
-
+  // =========================
+  // 👾 JEFE 1
+  // =========================
+  if (bossLevel === 1) {
     if (boss.hp === boss.maxHp) {
-      img = boss2Img1; // 🟢 aparece
+      img = bossImg1;
     } else if (boss.hp > boss.maxHp / 2) {
-      img = boss2Img2; // 🟡 ya recibió daño
+      img = bossImg2;
     } else {
-      img = boss2Img3; // 🔴 mitad de vida
+      img = bossImg3;
     }
   }
 
-  // dibujar imagen
-   if (img) {
+  // =========================
+  // 😈 JEFE 2
+  // =========================
+  else if (bossLevel === 2) {
+    if (boss.hp === boss.maxHp) {
+      img = boss2Img1;
+    } else if (boss.hp > boss.maxHp / 2) {
+      img = boss2Img2;
+    } else {
+      img = boss2Img3;
+    }
+  }
 
-  if (boss.isFirst) {
-    // 👾 JEFE 1 (igual que siempre)
-    ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
+  // =========================
+  // ☠️ JEFE 3
+  // =========================
+  else if (bossLevel === 3) {
+    if (boss.hp === boss.maxHp) {
+      img = boss3Img1; // L-1
+    } else if (boss.hp > boss.maxHp / 2) {
+      img = boss3Img2; // L-2
+    } else {
+      img = boss3Img3; // L-3
+    }
+  }
 
-  } else {
-    // 😈 JEFE 2 (ajuste manual para que no se vea aplastado)
+  // =========================
+  // 🎨 DIBUJAR
+  // =========================
+  if (img) {
+    let newWidth = 200;
+    let newHeight = 200;
 
-    let newWidth = 200;   // prueba valores
-    let newHeight = 200;  // más cuadrado
-
-    // centrarlo para que no se vea movido
     let offsetX = boss.x + (boss.width - newWidth) / 2;
     let offsetY = boss.y + (boss.height - newHeight) / 2;
 
     ctx.drawImage(img, offsetX, offsetY, newWidth, newHeight);
   }
-}
 
-  // ❤️ barra de vida
+  // ❤️ VIDA
   ctx.fillStyle = "red";
   ctx.fillRect(50, 20, 300, 10);
 
