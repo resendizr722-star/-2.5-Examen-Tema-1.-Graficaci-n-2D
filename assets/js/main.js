@@ -1,6 +1,12 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+if ("ontouchstart" in window) {
+  document.body.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+  }, { passive: false });
+}
+
 canvas.width = 400;
 canvas.height = 600;
 
@@ -79,6 +85,62 @@ canvas.addEventListener("mousemove", (e) => {
   const rect = canvas.getBoundingClientRect();
   mouse.x = e.clientX - rect.left;
   mouse.y = e.clientY - rect.top;
+});
+
+// ==========================
+// 📱 TOUCH COMPATIBLE PRO
+// ==========================
+let touchActive = false;
+
+canvas.addEventListener("touchstart", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+
+  mouse.x = touch.clientX - rect.left;
+  mouse.y = touch.clientY - rect.top;
+
+  touchActive = true;
+
+  // Movimiento
+  if (mouse.x < canvas.width / 2) {
+    keys["ArrowLeft"] = true;
+    direction = "left";
+  } else {
+    keys["ArrowRight"] = true;
+    direction = "right";
+  }
+
+  shoot(); // disparo inicial
+
+}, { passive: false });
+
+
+canvas.addEventListener("touchmove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+
+  mouse.x = touch.clientX - rect.left;
+  mouse.y = touch.clientY - rect.top;
+
+  // actualizar movimiento
+  keys["ArrowLeft"] = false;
+  keys["ArrowRight"] = false;
+
+  if (mouse.x < canvas.width / 2) {
+    keys["ArrowLeft"] = true;
+    direction = "left";
+  } else {
+    keys["ArrowRight"] = true;
+    direction = "right";
+  }
+
+}, { passive: false });
+
+canvas.addEventListener("touchend", () => {
+  touchActive = false;
+
+  keys["ArrowLeft"] = false;
+  keys["ArrowRight"] = false;
 });
 
 // CONTROL
@@ -694,6 +756,12 @@ while (platforms.length < 12) {
     falling: false,
     fallSpeed: 0
   });
+  // 🔫 auto fire SOLO si es touch
+    if (touchActive) {
+    if (Date.now() - lastShotTime > 250) {
+    shoot();
+  }
+}
 
 }
 }
