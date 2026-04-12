@@ -7,35 +7,64 @@
 </head>
 <body>
 
+  <!-- NAVBAR (ARRIBA) -->
+  <div class="navbar">
+    <h1>Examen Tema 2. Graficación 2D</h1>
+  </div>
+
+  <!-- BOTÓN FULLSCREEN -->
   <button id="fullscreenBtn">⛶</button>
 
-       <!-- NUEVO CONTENEDOR -->
-       <div class="game-container">
+  <!-- CONTENIDO CENTRAL -->
+  <div class="main-content">
 
-         <div class="game-area">
-           <canvas id="game"></canvas>
-         </div>
+    <div class="game-container">
 
-         <div class="ui-panel">
-
-      <div class="logo">🚀</div>
-
-      <div class="score-box">
-        <div class="label">SCORE</div>
-        <div id="scoreUI">0</div>
+      <!-- JUEGO -->
+      <div class="game-area">
+        <canvas id="game"></canvas>
       </div>
 
-      <div class="score-box">
-        <div class="label">RECORD</div>
-        <div id="recordUI">0</div>
-      </div>
+      <!-- PANEL DERECHO -->
+      <div class="ui-panel">
 
-      <div class="controls">
-        <button id="pauseBtn" class="btn">⏸️</button>
-        <button id="resumeBtn" class="btn">▶️</button>
-        <button id="restartBtn" class="btn">🔄</button>
-      </div>
+        <div class="logo">🚀</div>
 
+        <div class="score-box">
+          <div class="label">SCORE</div>
+          <div id="scoreUI">0</div>
+        </div>
+
+        <div class="score-box">
+          <div class="label">RECORD</div>
+          <div id="recordUI">0</div>
+        </div>
+
+        <div class="controls">
+          <button id="pauseBtn" class="btn">⏸️</button>
+          <button id="resumeBtn" class="btn">▶️</button>
+          <button id="restartBtn" class="btn">🔄</button>
+        </div>
+
+      </div> <!-- 🔴 CIERRA ui-panel -->
+
+    </div> <!-- 🔴 CIERRA game-container -->
+
+  </div> <!-- 🔴 CIERRA main-content -->
+
+  <!-- FOOTER (ABAJO, FUERA DEL PANEL) -->
+  <div class="footer">
+    <p>Desarrollado por: Roman Resendiz 💻</p>
+    <p>Carrera: Ingeniería en Sistemas Computacionales</p>
+    <p>Maestro: Pinedo Fernandez Victor Manuel</p>
+    <p>Materia: Graficación</p>
+  </div>
+
+  <!-- SCRIPT SIEMPRE AL FINAL -->
   <script src="assets/js/main.js"></script>
+
 </body>
+<div class="navbar">
+  <h1>Examen Tema 2. Graficación 2D</h1>
+</div>
 </html>
