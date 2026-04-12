@@ -80,68 +80,70 @@ const shootSound = new Audio("assets/shoot.wav");
 
 // MOUSE
 let mouse = { x: 0, y: 0 };
+let touchStartX = 0;
+let touchCurrentX = 0;
+let isSwiping = false;
 
 canvas.addEventListener("mousemove", (e) => {
   const rect = canvas.getBoundingClientRect();
   mouse.x = e.clientX - rect.left;
   mouse.y = e.clientY - rect.top;
 });
-
 // ==========================
-// 📱 TOUCH COMPATIBLE PRO
+// 📱 TOUCH SWIPE + TAP
 // ==========================
-let touchActive = false;
-
 canvas.addEventListener("touchstart", (e) => {
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
 
+  touchStartX = touch.clientX;
+  touchCurrentX = touch.clientX;
+
   mouse.x = touch.clientX - rect.left;
   mouse.y = touch.clientY - rect.top;
 
-  touchActive = true;
-
-  // Movimiento
-  if (mouse.x < canvas.width / 2) {
-    keys["ArrowLeft"] = true;
-    direction = "left";
-  } else {
-    keys["ArrowRight"] = true;
-    direction = "right";
-  }
-
-  shoot(); // disparo inicial
+  isSwiping = false;
 
 }, { passive: false });
-
 
 canvas.addEventListener("touchmove", (e) => {
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
 
+  touchCurrentX = touch.clientX;
+
   mouse.x = touch.clientX - rect.left;
   mouse.y = touch.clientY - rect.top;
 
-  // actualizar movimiento
-  keys["ArrowLeft"] = false;
-  keys["ArrowRight"] = false;
+  let diffX = touchCurrentX - touchStartX;
 
-  if (mouse.x < canvas.width / 2) {
-    keys["ArrowLeft"] = true;
-    direction = "left";
-  } else {
-    keys["ArrowRight"] = true;
-    direction = "right";
+  if (Math.abs(diffX) > 15) {
+    isSwiping = true;
+
+    if (diffX > 0) {
+      keys["ArrowRight"] = true;
+      keys["ArrowLeft"] = false;
+      direction = "right";
+    } else {
+      keys["ArrowLeft"] = true;
+      keys["ArrowRight"] = false;
+      direction = "left";
+    }
   }
 
 }, { passive: false });
 
 canvas.addEventListener("touchend", () => {
-  touchActive = false;
+
+  if (!isSwiping) {
+    shoot(); // TAP dispara
+  }
 
   keys["ArrowLeft"] = false;
   keys["ArrowRight"] = false;
 });
+
+
 
 // CONTROL
 let direction = "right";
@@ -756,12 +758,7 @@ while (platforms.length < 12) {
     falling: false,
     fallSpeed: 0
   });
-  // 🔫 auto fire SOLO si es touch
-    if (touchActive) {
-    if (Date.now() - lastShotTime > 250) {
-    shoot();
-  }
-}
+  
 
 }
 }
