@@ -13,29 +13,57 @@ const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 fullscreenBtn.addEventListener("click", () => {
 
+  const isMobile = window.innerWidth < 768;
+
+  if (isMobile) {
+    // 📱 SIMULACIÓN FULLSCREEN
+    canvas.style.width = "100vw";
+    canvas.style.height = "100vh";
+    canvas.style.position = "fixed";
+    canvas.style.top = "0";
+    canvas.style.left = "0";
+    canvas.style.zIndex = "9999";
+    return;
+  }
+
+  // 💻 FULLSCREEN REAL PC
   if (!document.fullscreenElement) {
-
-    if (canvas.requestFullscreen) canvas.requestFullscreen();
-    else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
-    else if (canvas.msRequestFullscreen) canvas.msRequestFullscreen();
-
+    canvas.requestFullscreen?.();
   } else {
-    if (document.exitFullscreen) document.exitFullscreen();
+    document.exitFullscreen?.();
   }
 
 });
 
 function resizeCanvas() {
+
+  const isMobile = window.innerWidth < 768;
+
+  if (isMobile) {
+    // 📱 FULLSCREEN REAL EN CELULAR
+    canvas.width = BASE_WIDTH;
+    canvas.height = BASE_HEIGHT;
+
+    canvas.style.width = "100vw";
+    canvas.style.height = "100vh";
+
+    canvas.style.position = "fixed";
+    canvas.style.top = "0";
+    canvas.style.left = "0";
+    canvas.style.zIndex = "9999";
+
+    return;
+  }
+
+  // 💻 PC NORMAL
   const scale = Math.min(
     window.innerWidth / BASE_WIDTH,
     window.innerHeight / BASE_HEIGHT
   );
 
-  // tamaño REAL del juego (NO cambia nunca)
   canvas.width = BASE_WIDTH;
   canvas.height = BASE_HEIGHT;
 
-  // tamaño VISUAL (se adapta)
   canvas.style.width = BASE_WIDTH * scale + "px";
   canvas.style.height = BASE_HEIGHT * scale + "px";
 
