@@ -1,3 +1,8 @@
+let isPaused = false;
+let record = localStorage.getItem("record") || 0;
+
+document.getElementById("recordUI").textContent = record;
+
 const canvas = document.getElementById("game");
 
 const BASE_WIDTH = 400;
@@ -439,6 +444,7 @@ function shoot() {
 
 // UPDATE
 function update() {
+  if (isGameOver) return;
   const ZONES = getZones();
 
   if (keys["ArrowLeft"]) player.x -= 5;
@@ -569,6 +575,13 @@ if (player.y < 250) {
       }
 
       score += 100;
+      document.getElementById("scoreUI").textContent = score;
+
+      if (score > record) {
+        record = score;
+       localStorage.setItem("record", record);
+        document.getElementById("recordUI").textContent = record;
+      }
 
      if (boss === null) {
       let nextBossScore = 2500 + (bossCycle * 7500);
@@ -804,9 +817,8 @@ while (platforms.length < 12) {
     falling: false,
     fallSpeed: 0
   });
-  
-
 }
+document.getElementById("scoreUI").textContent = score;
 }
 
 // SLIME
@@ -1117,17 +1129,61 @@ meteors.forEach(m => {
   });
 
 });
+
+// ==========================
+// 💀 GAME OVER SCREEN
+// ==========================
+if (isGameOver) {
+
+  // 🔲 fondo oscuro transparente
+  ctx.fillStyle = "rgba(0,0,0,0.7)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 🧠 título
+  ctx.fillStyle = "#00ffcc";
+  ctx.font = "bold 40px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 40);
+
+  // 📊 score
+  ctx.font = "20px Arial";
+  ctx.fillStyle = "white";
+  ctx.fillText("Score: " + score, canvas.width / 2, canvas.height / 2);
+
+  // 🔄 instrucción
+  ctx.fillStyle = "#aaaaaa";
+  ctx.font = "16px Arial";
+  ctx.fillText("Presiona 🔄 para reiniciar", canvas.width / 2, canvas.height / 2 + 40);
 }
 
+}
+
+let isGameOver = false;
+
 function gameOver() {
-  alert("💀 Game Over\nScore: " + score);
-  location.reload();
+  isGameOver = true;
 }
 
 function loop() {
-  update();
-  draw();
+
+  if (!isPaused && !isGameOver) {
+    update();
+  }
+
+  draw(); // 🔥 SIEMPRE dibuja (para mostrar Game Over)
+
   requestAnimationFrame(loop);
 }
 
 loop();
+document.getElementById("pauseBtn").onclick = () => {
+  isPaused = true;
+};
+
+document.getElementById("resumeBtn").onclick = () => {
+  isPaused = false;
+};
+
+document.getElementById("restartBtn").onclick = () => {
+  location.reload();
+};

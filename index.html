@@ -6,9 +6,35 @@
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
+
   <button id="fullscreenBtn">⛶</button>
-  <canvas id="game"></canvas>
-  <canvas id="game"></canvas>
+
+       <!-- NUEVO CONTENEDOR -->
+       <div class="game-container">
+
+         <div class="game-area">
+           <canvas id="game"></canvas>
+         </div>
+
+         <div class="ui-panel">
+
+      <div class="logo">🚀</div>
+
+      <div class="score-box">
+        <div class="label">SCORE</div>
+        <div id="scoreUI">0</div>
+      </div>
+
+      <div class="score-box">
+        <div class="label">RECORD</div>
+        <div id="recordUI">0</div>
+      </div>
+
+      <div class="controls">
+        <button id="pauseBtn" class="btn">⏸️</button>
+        <button id="resumeBtn" class="btn">▶️</button>
+        <button id="restartBtn" class="btn">🔄</button>
+      </div>
 
   <script src="assets/js/main.js"></script>
 </body>
