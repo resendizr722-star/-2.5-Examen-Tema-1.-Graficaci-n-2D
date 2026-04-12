@@ -1255,9 +1255,10 @@ if (window.innerWidth < 768) {
     ctx.font = "20px Arial";
     ctx.textAlign = "center";
 
-    let icon = "⏸️";
-    if (btn.id === "resume") icon = "▶️";
+    let icon = "▶️";
+    if (btn.id === "resume") icon = "⏸️";
     if (btn.id === "restart") icon = "🔄";
+    if (btn.id === "tutorial") icon = "❓";
 
     ctx.fillText(
       icon,
