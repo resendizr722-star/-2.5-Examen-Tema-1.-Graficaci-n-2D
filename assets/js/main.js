@@ -1,19 +1,47 @@
 const canvas = document.getElementById("game");
 
+const BASE_WIDTH = 400;
+const BASE_HEIGHT = 600;
+
 //FULL SCREEN
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 fullscreenBtn.addEventListener("click", () => {
-  let elem = document.documentElement;
 
   if (!document.fullscreenElement) {
-    if (elem.requestFullscreen) elem.requestFullscreen();
-    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-    else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+
+    if (canvas.requestFullscreen) canvas.requestFullscreen();
+    else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
+    else if (canvas.msRequestFullscreen) canvas.msRequestFullscreen();
+
   } else {
     if (document.exitFullscreen) document.exitFullscreen();
   }
+
 });
+
+function resizeCanvas() {
+  const scale = Math.min(
+    window.innerWidth / BASE_WIDTH,
+    window.innerHeight / BASE_HEIGHT
+  );
+
+  // tamaño REAL del juego (NO cambia nunca)
+  canvas.width = BASE_WIDTH;
+  canvas.height = BASE_HEIGHT;
+
+  // tamaño VISUAL (se adapta)
+  canvas.style.width = BASE_WIDTH * scale + "px";
+  canvas.style.height = BASE_HEIGHT * scale + "px";
+
+  canvas.style.display = "block";
+  canvas.style.margin = "auto";
+}
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+document.addEventListener("fullscreenchange", resizeCanvas);
+
 
 const ctx = canvas.getContext("2d");
 
@@ -23,8 +51,6 @@ if ("ontouchstart" in window) {
   }, { passive: false });
 }
 
-canvas.width = 400;
-canvas.height = 600;
 
 const PLAYER_SIZE = 70;
 
@@ -227,11 +253,13 @@ let bossCycle = 0;
 const PLATFORM_GAP = 65;
 const SLIME_CHANCE = 0.35;
 
-const ZONES = {
-  LEFT: 40,
-  CENTER: canvas.width / 2 - 50,
-  RIGHT: canvas.width - 140
-};
+function getZones() {
+  return {
+    LEFT: 40,
+    CENTER: canvas.width / 2 - 50,
+    RIGHT: canvas.width - 140
+  };
+}
 
 const zoneKeys = ["LEFT", "CENTER", "RIGHT"];
 
@@ -251,6 +279,7 @@ function getHighestPlatform() {
 }
 
 function createPlatforms() {
+  const ZONES = getZones(); 
   platforms = [];
 
   platforms.push({
@@ -410,6 +439,7 @@ function shoot() {
 
 // UPDATE
 function update() {
+  const ZONES = getZones();
 
   if (keys["ArrowLeft"]) player.x -= 5;
   if (keys["ArrowRight"]) player.x += 5;
