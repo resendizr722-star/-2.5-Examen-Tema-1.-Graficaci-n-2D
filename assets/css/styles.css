@@ -191,3 +191,11 @@ canvas {
     font-size: 10px;
   }
 }
+@media (max-width: 768px) {
+  .ui-panel {
+    display: none; /* 🔥 oculta panel en móvil */
+  }
+}
+#tutorialBtn {
+  box-shadow: 0 0 10px rgba(255,255,0,0.4);
+}

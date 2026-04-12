@@ -1,4 +1,5 @@
 let isPaused = false;
+let showTutorial = false;
 let record = localStorage.getItem("record") || 0;
 
 document.getElementById("recordUI").textContent = record;
@@ -10,6 +11,11 @@ const BASE_HEIGHT = 600;
 
 //FULL SCREEN
 const fullscreenBtn = document.getElementById("fullscreenBtn");
+const tutorialBtn = document.getElementById("tutorialBtn");
+
+tutorialBtn.addEventListener("click", () => {
+  showTutorial = !showTutorial;
+});
 
 fullscreenBtn.addEventListener("click", () => {
 
@@ -189,6 +195,8 @@ canvas.addEventListener("touchstart", (e) => {
       if (btn.id === "pause") isPaused = true;
       if (btn.id === "resume") isPaused = false;
       if (btn.id === "restart") location.reload();
+      if (btn.id === "tutorial") showTutorial = !showTutorial;
+      
 
       return; // 🔥 evita disparar
     }
@@ -314,7 +322,8 @@ let bossCycle = 0;
 let mobileButtons = [
   { id: "pause", x: 20, y: 20, size: 50 },
   { id: "resume", x: 80, y: 20, size: 50 },
-  { id: "restart", x: 140, y: 20, size: 50 }
+  { id: "restart", x: 140, y: 20, size: 50 },
+  { id: "tutorial", x: 200, y: 20, size: 50 }
 ];
 
 const PLATFORM_GAP = 65;
@@ -506,6 +515,7 @@ function shoot() {
 
 // UPDATE
 function update() {
+  if (showTutorial) return;
   if (isGameOver) return;
   const ZONES = getZones();
 
@@ -1111,10 +1121,21 @@ if (boss) {
 
   drawCrosshair();
 
-  ctx.fillStyle = "white";
-  ctx.fillText("Score: " + score, 10, 50);
+ // 🔥 ESTILO GAMER SCORE
+ ctx.font = "20px Arial"; // IMPORTANTE
+ ctx.fillStyle = "#00ffcc";
+ 
+ ctx.shadowColor = "#00ffcc";
+ ctx.shadowBlur = 15; // 🔥 más glow
 
-meteors.forEach(m => {
+ ctx.textAlign = "right";
+ ctx.fillText("Score: " + score, canvas.width - 15, 50);
+
+ // reset (MUY IMPORTANTE)
+ ctx.shadowBlur = 0;
+ ctx.textAlign = "left";
+
+ meteors.forEach(m => {
 
   // ======================
   // 🔥 ESTELA (PRIMERO)
@@ -1245,6 +1266,33 @@ if (window.innerWidth < 768) {
     );
 
   });
+}
+
+// ==========================
+// 📘 TUTORIAL OVERLAY
+// ==========================
+if (showTutorial) {
+
+  // fondo oscuro
+  ctx.fillStyle = "rgba(0,0,0,0.8)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#00ffcc";
+  ctx.textAlign = "center";
+
+  ctx.font = "20px Arial";
+  ctx.fillText("🎮 CÓMO JUGAR", canvas.width / 2, 80);
+
+  ctx.font = "14px Arial";
+
+  ctx.fillText("➡️ Muévete con ← → o desliza", canvas.width / 2, 140);
+  ctx.fillText("🎯 Toca / click para disparar", canvas.width / 2, 170);
+  ctx.fillText("🧱 Salta en plataformas", canvas.width / 2, 200);
+  ctx.fillText("☠️ Evita enemigos y meteoritos", canvas.width / 2, 230);
+  ctx.fillText("👾 Derrota al jefe", canvas.width / 2, 260);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText("Toca ❓ para cerrar", canvas.width / 2, 320);
 }
 
 }
