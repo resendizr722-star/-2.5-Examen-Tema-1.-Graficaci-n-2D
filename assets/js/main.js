@@ -548,18 +548,31 @@ function update() {
         // 🚫 si ya se está rompiendo, no colisiona
         if (p.breaking) return;
 
-        if (p.breakable) {
+        // 💥 REBOTE SIEMPRE
+player.y = p.y - player.height;
+player.velocityY = player.jumpPower;
 
-          // 💥 rebote + ruptura inmediata
-          player.y = p.y - player.height;
-          player.velocityY = player.jumpPower;
+// ✅ SUMAR SCORE EN TODAS LAS PLATAFORMAS
+if (!p.scored) {
+  score += 50;
+  p.scored = true;
 
-          if (jumpSound.paused) jumpSound.play();
+  document.getElementById("scoreUI").textContent = score;
 
-          p.breaking = true;
-          p.breakTimer = 20;
+  if (score > record) {
+    record = score;
+    localStorage.setItem("record", record);
+    document.getElementById("recordUI").textContent = record;
+  }
+}
 
-        } else {
+if (jumpSound.paused) jumpSound.play();
+
+// 💥 SI ES ROMPIBLE → SE ROMPE
+if (p.breakable) {
+  p.breaking = true;
+  p.breakTimer = 20;
+} else {
 
           // normal
           player.y = p.y - player.height;
@@ -604,6 +617,7 @@ if (player.y < 250) {
       p.zone = newZone;
       p.x = ZONES[newZone];
       p.y = top.y - PLATFORM_GAP;
+      p.scored = false; // 🔥 reset para poder volver a sumar
       p.slime = Math.random() < SLIME_CHANCE;
       
       // 🔄 reset
@@ -646,7 +660,7 @@ if (player.y < 250) {
         }
       }
 
-      score += 100;
+      
       document.getElementById("scoreUI").textContent = score;
 
       if (score > record) {
