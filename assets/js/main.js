@@ -168,14 +168,38 @@ canvas.addEventListener("mousemove", (e) => {
 // 📱 TOUCH SWIPE + TAP
 // ==========================
 canvas.addEventListener("touchstart", (e) => {
+
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
 
+  let tx = touch.clientX - rect.left;
+  let ty = touch.clientY - rect.top;
+
+  // ==========================
+  // 📱 DETECTAR BOTONES
+  // ==========================
+  for (let btn of mobileButtons) {
+    if (
+      tx > btn.x &&
+      tx < btn.x + btn.size &&
+      ty > btn.y &&
+      ty < btn.y + btn.size
+    ) {
+
+      if (btn.id === "pause") isPaused = true;
+      if (btn.id === "resume") isPaused = false;
+      if (btn.id === "restart") location.reload();
+
+      return; // 🔥 evita disparar
+    }
+  }
+
+  // 🔽 TU CÓDIGO ORIGINAL (NO BORRAR)
   touchStartX = touch.clientX;
   touchCurrentX = touch.clientX;
 
-  mouse.x = touch.clientX - rect.left;
-  mouse.y = touch.clientY - rect.top;
+  mouse.x = tx;
+  mouse.y = ty;
 
   isSwiping = false;
 
@@ -282,6 +306,16 @@ let lastBossScore = 0;
 let firstBoss = true;
 let bossLevel = 0;
 let bossCycle = 0;
+
+// ==========================
+// 📱 BOTONES MÓVIL (GLOBAL)
+// ==========================
+
+let mobileButtons = [
+  { id: "pause", x: 20, y: 20, size: 50 },
+  { id: "resume", x: 80, y: 20, size: 50 },
+  { id: "restart", x: 140, y: 20, size: 50 }
+];
 
 const PLATFORM_GAP = 65;
 const SLIME_CHANCE = 0.35;
@@ -1182,6 +1216,35 @@ if (isGameOver) {
   ctx.fillStyle = "#aaaaaa";
   ctx.font = "16px Arial";
   ctx.fillText("Presiona 🔄 para reiniciar", canvas.width / 2, canvas.height / 2 + 40);
+}
+
+// ==========================
+// 📱 BOTONES MÓVIL
+// ==========================
+if (window.innerWidth < 768) {
+
+  mobileButtons.forEach(btn => {
+
+    // fondo
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillRect(btn.x, btn.y, btn.size, btn.size);
+
+    // icono
+    ctx.fillStyle = "#00ffcc";
+    ctx.font = "20px Arial";
+    ctx.textAlign = "center";
+
+    let icon = "⏸️";
+    if (btn.id === "resume") icon = "▶️";
+    if (btn.id === "restart") icon = "🔄";
+
+    ctx.fillText(
+      icon,
+      btn.x + btn.size / 2,
+      btn.y + btn.size / 2 + 7
+    );
+
+  });
 }
 
 }
